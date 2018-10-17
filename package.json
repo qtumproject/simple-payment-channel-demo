@@ -1,0 +1,18 @@
+{
+  "name": "whisper-payment-channel",
+  "version": "1.0.0",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "ganache": "ganache-cli -m=lightning --gasLimit 0xfffffffffff",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^2.19.0",
+    "truffle-contract": "^3.0.6",
+    "web3": "^1.0.0-beta.36"
+  }
+}
