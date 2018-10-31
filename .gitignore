@@ -38,3 +38,5 @@ profile.cov
 /build
 node_modules/
 /.cache
+.qtum
+supervisord.*

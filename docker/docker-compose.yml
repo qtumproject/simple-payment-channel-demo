@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  insightapi:
+    image: dcb9/qtum-insightapi
+    links:
+    - mongo
+    volumes:
+    - ./:/data
+    ports:
+    - "3001:3001"
+    - "18332:18332"
+
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ""
+      MONGO_INITDB_ROOT_PASSWORD: ""
+
+  janus:
+    build: ./janus
+    links:
+    - insightapi
+    ports:
+    - "23889:23889"
+
