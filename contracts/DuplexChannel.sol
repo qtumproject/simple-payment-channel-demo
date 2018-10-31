@@ -8,8 +8,8 @@ contract DuplexChannel  {
         _;
     }
 
-    modifier isCounterpart(uint channel) {
-        require(channels[channel].alice == msg.sender || channels[channel].bob == msg.sender);
+    modifier requireCounterpart(uint channel) {
+        require(isCounterpart(channel));
         _;
     }
 
@@ -18,6 +18,9 @@ contract DuplexChannel  {
         _;
     }
     function() public noeth {}
+    function isCounterpart(uint channel) public view returns (bool) {
+        return channels[channel].alice == msg.sender || channels[channel].bob == msg.sender;
+    }
 
     uint finalizationDelay = 10000;
 
@@ -34,22 +37,35 @@ contract DuplexChannel  {
     struct Channel {
         uint expireblock;
         address alice;
+        address aliceECRecoverAddr;
         address bob;
+        address bobECRecoverAddr;
         mapping (address => Endpoint) endpoints;
     }
 
     mapping (uint => Channel) channels;
     uint maxchannel;
 
-    function makeChannel(address alice, address bob, uint expireblock) public noeth {
+    function makeChannel(address alice, address aliceECRecoverAddr,  address bob, address bobECRecoverAddr, uint expireblock) public payable {
+        if (alice != msg.sender && bob != msg.sender) {
+            require(msg.value==0, "only alice or bob can only make channel with value");
+        }
+
         maxchannel += 1;
         channels[maxchannel].alice = alice;
+        channels[maxchannel].aliceECRecoverAddr = aliceECRecoverAddr;
         channels[maxchannel].bob = bob;
-        channels[maxchannel].expireblock = expireblock;
+        channels[maxchannel].bobECRecoverAddr = bobECRecoverAddr;
+        channels[maxchannel].expireblock = expireblock + block.number;
+
+        if (msg.value > 0) {
+            channels[maxchannel].endpoints[msg.sender].balance += uint96(msg.value);
+        }
+
         emit LogChannel(alice, bob, expireblock, maxchannel);
     }
 
-    function deposit(uint channel) public payable isCounterpart(channel) {
+    function deposit(uint channel) public payable requireCounterpart(channel) {
         channels[channel].endpoints[msg.sender].balance += uint96(msg.value);
     }
 
@@ -81,8 +97,8 @@ contract DuplexChannel  {
 
         Channel memory ch = channels[channel];
 
-        return (signer == ch.alice && recipient == ch.bob) ||
-            (signer == ch.bob && recipient == ch.alice);
+        return (signer == ch.aliceECRecoverAddr && recipient == ch.bob) ||
+            (signer == ch.bobECRecoverAddr && recipient == ch.alice);
     }
 
     function claim(
@@ -110,7 +126,7 @@ contract DuplexChannel  {
         return channels[channel].endpoints[owner].balance;
     }
 
-    function withdraw(uint channel) public noeth isCounterpart(channel) openingChannel(channel) {
+    function withdraw(uint channel) public noeth requireCounterpart(channel) openingChannel(channel) {
         Channel memory ch = channels[channel];
 
         require(!channels[channel].endpoints[msg.sender].paid);
