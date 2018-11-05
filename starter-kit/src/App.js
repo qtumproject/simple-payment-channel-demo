@@ -1,48 +1,43 @@
 import React, { Component } from 'react';
 import 'antd/dist/antd.css';
 import './App.css';
-import DuplexChannelArtifact from './DuplexChannel.json';
-import { Qweb3 } from 'qweb3'
+import { PrivateKey, Networks } from 'qtumcore-lib';
+import Web3 from 'web3'
+import { networks, Wallet } from "qtumjs-wallet"
+import {sleep } from './utils/time'
+import {sign } from './utils/crypto'
+import {MakeOrJoinChannel} from './components/Channel/MakeOrJoinChannel'
 
 import { Layout, Button, Input, Steps, message} from 'antd';
+import { ImportWIF, importWIF } from './components/Wallet/ImportWIF';
+import { ChannelInfo } from './components/Channel/ChannelInfo';
 const { Header, Footer, Sider, Content } = Layout;
 
 const Step = Steps.Step;
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+const web3 = new Web3();
 
 class App extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      qweb3: null,
-      contract: null,
       account: null,
-
-      current: 0,
-
-      // create a channel form
-      myAddress: '',
-      myECRecoveryAddress: '0x6Fd56E72373a34bA39Bf4167aF82e7A411BFED47',
-      counterpartAddress: 'qLn9vqbr2Gx3TsVR9QyTVB5mrMoh4x43Uf',
-      counterpartECRecoveryAddress: '0x0CF28703ECc9C7dB28F3d496e41666445b0A4EAF',
-      //
-
+      channelId: null
     };
-
-    this.handleQryptoInstalledOrUpdated = this.handleQryptoInstalledOrUpdated.bind(this)
-    this.handleQryptoAcctChanged = this.handleQryptoAcctChanged.bind(this)
 
     this.handleCounterpartAddressChange = this.handleCounterpartAddressChange.bind(this);
     this.handleCounterpartECRecoveryAddressChange = this.handleCounterpartECRecoveryAddressChange.bind(this);
     this.handlemyECRecoveryAddressChange = this.handlemyECRecoveryAddressChange.bind(this);
+    this.handleDepositValueChange = this.handleDepositValueChange.bind(this);
+    this.handlePaymentValueChange = this.handlePaymentValueChange.bind(this);
 
     this.getECRecoveryAddress = this.getECRecoveryAddress.bind(this);
   }
 
+
+  handlePaymentValueChange(e) { this.setState({ paymentValue: e.target.value }) }
+  handleDepositValueChange(e) { this.setState({ depositValue: e.target.value }) }
   handleCounterpartAddressChange(e) { this.setState({ counterpartAddress: e.target.value }) }
   handleCounterpartECRecoveryAddressChange(e) { this.setState({ counterpartECRecoveryAddress: e.target.value }) }
   handlemyECRecoveryAddressChange(e) { this.setState({ myECRecoveryAddress: e.target.value }) }
@@ -51,31 +46,74 @@ class App extends Component {
   }
 
   componentWillMount() {
-    window.postMessage({ message: { type: 'CONNECT_QRYPTO' } }, '*')
-    window.addEventListener('message', this.handleQryptoInstalledOrUpdated, false);
-    window.addEventListener('message', this.handleQryptoAcctChanged, false);
   }
-
 
   async componentDidMount() {
-    await this.initContract()
+
   }
 
+
+
   async makeChannel() {
-    const myAddress = this.state.account.address
     const {
-      myECRecoveryAddress, counterpartAddress, counterpartECRecoveryAddress,
-      contract
-    }  = this.state
+      myAddress, myECRecoveryAddress,
+      counterpartAddress, counterpartECRecoveryAddress,
+      contract, qweb3, channelId,
+    } = this.state
+
+    if (channelId) {
+      await this.getMyDepositValue(channelId)
+      return
+    }
 
     const blkNum = 100
 
-    const tx = await contract.send('makeChannel', {
+    const txid = await contract.send('makeChannel', {
       methodArgs: [myAddress, myECRecoveryAddress, counterpartAddress, counterpartECRecoveryAddress, blkNum],    // Sets the function params
       gasLimit: 1000000,  // Sets the gas limit to 1 million
       senderAddress: myAddress,
     })
-    console.log(tx)
+    console.log(txid)
+
+    let receipt = await this.getTransactionReceipt(txid.txid)
+    receipt = receipt[0]
+    if (receipt.excepted === 'None') {
+      console.log("Success: create channel")
+    }
+
+    {
+      const channelId = parseInt(receipt['log'][0]['data'], 16)
+      this.setState({channelId})
+      console.log("channel id:", channelId)
+    }
+  }
+
+
+
+  async payment() {
+    const {
+      paymentValue,
+      myPrivateKeyHex,
+      channelId,
+      counterpartAddress,
+      qweb3,
+    } = this.state
+    const counterpartAddressHex = await qweb3.getHexAddress(counterpartAddress)
+    const payment = await this.createPayment(myPrivateKeyHex, channelId, `0x${counterpartAddressHex}`, paymentValue)
+    console.log(JSON.stringify(payment))
+  }
+
+  async createPayment(payerPrivateKey, channelId, recipient, value) {
+    console.log(`Creating a payment to ${recipient} with ${value} QTUM...`)
+    value = value * 1e8
+    const paymentHash = await web3.utils.soliditySha3(channelId, recipient, value)
+    const payment = {
+      sig: await sign(paymentHash, payerPrivateKey),
+      value: value,
+    }
+    console.log("Payment:", payment)
+    console.log()
+    return payment
   }
 
   async next() {
@@ -83,7 +121,16 @@ class App extends Component {
 
     switch(this.state.current) {
       case 0:
-      func = () => { return this.makeChannel() }
+      func = () =>  this.importPrivateKey()
+      break;
+      case 1:
+      func = () => this.makeChannel()
+      break;
+      case 2:
+      func = () => this.deposit()
+      break;
+      case 3:
+      func = () => this.payment()
       break;
       default:
       return false
@@ -104,100 +151,111 @@ class App extends Component {
     this.setState({ current });
   }
 
-  async initContract() {
-    const qweb3 = await this.getQweb3()
-    const account = window.qrypto.account
-
-    const contractAddress = DuplexChannelArtifact["networks"]["regtest"]["address"]
-    const contractAbi = DuplexChannelArtifact["abi"]
-    const contract = qweb3.Contract(contractAddress, contractAbi)
-
-    this.setState({qweb3, contract, account})
-    console.log(this.state)
-  }
-
-  async getQweb3() {
-    while (!window.qrypto) {
-      await sleep(100)
-    }
-
-    return new Qweb3(window.qrypto.rpcProvider)
-  }
-
-  handleQryptoAcctChanged(event) {
-    if (event.data.message && event.data.message.type === "QRYPTO_ACCOUNT_CHANGED") {
-      if (event.data.message.payload.error) {
-        // handle error
-      }
-      this.setState({account: event.data.message.payload.account})
-      console.log("account:", event.data.message.payload.account)
-    }
-  }
-
-  handleQryptoInstalledOrUpdated(event) {
-    if (event.data.message && event.data.message.type === 'QRYPTO_INSTALLED_OR_UPDATED') {
-      // Refresh the page
-      window.location.reload()
-    }
+  handlePrivateKeyChange = (e) => {
+    this.setState({ myPrivateKey: e.target.value })
   }
 
   render() {
 
-    const { current, account } = this.state;
+    /*
+    const { current, myAddress, myECRecoveryAddress } = this.state;
 
     let content
-    if (account && account.loggedIn) {
-      const steps = [{
-        title: 'Create a Channel',
-        content: <div>
-          <p>Your QTUM Address: {account.address}</p>
-          {/* <p><Button type="primary" onClick={this.getECRecoveryAddress}>sign a message</Button> to get my ECRecovery address</p> */}
-          <p><label>Your ECRecovery address</label><Input onChange={this.handlemyECRecoveryAddressChange} value={this.state.myECRecoveryAddress}></Input></p>
-          <p><label>Counterpart QTUM Address</label><Input onChange={this.handleCounterpartAddressChange} value={this.state.counterpartAddress}></Input></p>
-          <p><label>Counterpart ECRecovery Address</label><Input onChange={this.handleCounterpartECRecoveryAddressChange} value={this.state.counterpartECRecoveryAddress}></Input></p>
-        </div>,
-      }, {
-        title: 'Second',
-        content: 'Second-content',
-      }, {
-        title: 'Last',
-        content: 'Last-content',
-      }];
-      content = (<><Steps current={current}>
-                {steps.map(item => <Step key={item.title} title={item.title} />)}
-              </Steps>
-              <div className="steps-content">{steps[current].content}</div>
-              <div className="steps-action">
-                {
-                  current < steps.length - 1
-                  && <Button type="primary" onClick={() => this.next()}>Next</Button>
-                }
-                {
-                  current === steps.length - 1
-                  && <Button type="primary" onClick={() => message.success('Processing complete!')}>Done</Button>
-                }
-                {
-                  current > 0
-                  && (
-                    <Button style={{ marginLeft: 8 }} onClick={() => this.prev()}>
-                      Previous
-            </Button>
-                  )
-                }
-              </div></>)
-    } else {
-      content = <p>Please login your account</p>
-    }
+    const steps = [{
+      title: 'Import private key',
+      content: <div>
+        <p><label>Private Key</label><Input onChange={this.handlePrivateKeyChange} value={this.state.myPrivateKey}></Input></p>
+      </div>,
+    },{
+      title: 'Create a Channel',
+      content: <div>
+        <p>Your QTUM Address: {myAddress}</p>
+        <p>Your ECRecovery address: {myECRecoveryAddress}</p>
+
+        <p><label>Counterpart QTUM Address</label><Input onChange={this.handleCounterpartAddressChange} value={this.state.counterpartAddress}></Input></p>
+        <p><label>Counterpart ECRecovery Address</label><Input onChange={this.handleCounterpartECRecoveryAddressChange} value={this.state.counterpartECRecoveryAddress}></Input></p>
+      </div>,
+    }, {
+      title: 'Deposit to channel',
+      content: <>
+      <p>deposit value: {this.state.myDepositValue} QTUM</p>
+      <p><Input onChange={this.handleDepositValueChange} value={this.state.depositValue} /></p>
+      </>,
+    }, {
+      title: 'Create a payment',
+      content: <>
+      <p><Input onChange={this.handlePaymentValueChange} value={this.state.paymentValue} /></p>
+      </>,
+    }, {
+      title: 'Claim',
+      content: 'claim',
+    }, {
+      title: 'Withdraw',
+      content: 'Withdraw',
+    }];
+    content = (<><Steps current={current}>
+              {steps.map(item => <Step key={item.title} title={item.title} />)}
+            </Steps>
+            <div className="steps-content">{steps[current].content}</div>
+            <div className="steps-action">
+              {
+                current < steps.length - 1
+                && <Button type="primary" onClick={() => this.next()}>
+                  Next
+                </Button>
+              }
+              {
+                current === steps.length - 1
+                && <Button type="primary" onClick={() => message.success('Processing complete!')}>Done</Button>
+              }
+              {
+                current > 0
+                && (
+                  <Button style={{ marginLeft: 8 }} onClick={() => this.prev()}>
+                    Previous
+          </Button>
+                )
+              }
+            </div></>)
+
+    */
+
+
 
     return (
       <Layout>
         <Header className="header"><h1>Starter kit <span>a State Channel demo in QTUM</span></h1></Header>
         <Layout>
-          <Content>{content}</Content>
+          <Content>{this.renderContent()}</Content>
         </Layout>
         <Footer>Starter kit ©2018 Created by <a href="https://github.com/dcb9">dcb9</a></Footer>
       </Layout>
     );
+  }
+
+  renderContent() {
+    const {account, channelId} = this.state
+    if (!account) {
+      return <ImportWIF handleUpdateAccount={(acc) => this.handleUpdateAccount(acc)} />
+    }
+
+    if (!channelId) {
+      return <MakeOrJoinChannel
+        handleUpdateChannelId={(channelId) => this.handleUpdateChannelId(channelId)}
+        account={this.state.account}
+      />
+    }
+
+    return <ChannelInfo channelId={channelId} account={account} />
+  }
+
+  handleUpdateChannelId(channelId) {
+    console.log(channelId)
+    this.setState({channelId})
+  }
+
+  handleUpdateAccount(account) {
+    this.setState({account})
   }
 }
 

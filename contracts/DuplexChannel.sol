@@ -13,7 +13,12 @@ contract DuplexChannel  {
         _;
     }
 
-    modifier openingChannel(uint channel) {
+    modifier requireClosedChannel(uint channel) {
+        require(channelClosed(channel));
+        _;
+    }
+
+    modifier requireOpeningChannel(uint channel) {
         require(!channelClosed(channel));
         _;
     }
@@ -62,7 +67,7 @@ contract DuplexChannel  {
             channels[maxchannel].endpoints[msg.sender].balance += uint96(msg.value);
         }
 
-        emit LogChannel(alice, bob, expireblock, maxchannel);
+        emit LogChannel(alice, bob, channels[maxchannel].expireblock, maxchannel);
     }
 
     function deposit(uint channel) public payable requireCounterpart(channel) {
@@ -73,7 +78,7 @@ contract DuplexChannel  {
         return channels[channel].expireblock < block.number;
     }
 
-    function channelClosed(uint channel) private view returns (bool) {
+    function channelClosed(uint channel) public view returns (bool) {
         Channel memory ch = channels[channel];
         return channelExpired(channel) ||
             (
@@ -104,14 +109,14 @@ contract DuplexChannel  {
     function claim(
         uint channel, address recipient, uint96 value,
         uint8 v, bytes32 r, bytes32 s
-    ) public noeth openingChannel(channel) {
+    ) public noeth requireOpeningChannel(channel) {
         Channel memory ch = channels[channel];
         Endpoint memory ep = channels[channel].endpoints[recipient];
 
         require(verify(channel, recipient, value, v, r, s), "invalid payment");
         require(ep.receivable + ep.balance >= ep.balance);
 
-        // channels[channel].endpoints[recipient].closed = true;
+        channels[channel].endpoints[recipient].closed = true;
         channels[channel].endpoints[recipient].receivable = value;
 
         //if this is first claim,
@@ -126,7 +131,7 @@ contract DuplexChannel  {
         return channels[channel].endpoints[owner].balance;
     }
 
-    function withdraw(uint channel) public noeth requireCounterpart(channel) openingChannel(channel) {
+    function withdraw(uint channel) public noeth requireCounterpart(channel) requireClosedChannel(channel) {
         Channel memory ch = channels[channel];
 
         require(!channels[channel].endpoints[msg.sender].paid);
@@ -160,6 +165,5 @@ contract DuplexChannel  {
         msg.sender.transfer(net);
 
         channels[channel].endpoints[msg.sender].paid = true;
-        channels[channel].endpoints[msg.sender].closed = true;
     }
 }
