@@ -131,7 +131,10 @@ contract DuplexChannel  {
         return channels[channel].endpoints[owner].balance;
     }
 
-    function withdraw(uint channel) public noeth requireCounterpart(channel) requireClosedChannel(channel) {
+    function getWithdrawalBalance(uint channel)
+        public view noeth
+        requireCounterpart(channel) requireClosedChannel(channel)
+        returns (uint) {
         Channel memory ch = channels[channel];
 
         require(!channels[channel].endpoints[msg.sender].paid);
@@ -153,17 +156,18 @@ contract DuplexChannel  {
         uint bobnet = bob.balance - alicereceivable + bobreceivable;
 
         //make double sure a bug can't drain from other channels...
-        if (alicenet + bobnet > alice.balance + bob.balance) return;
+        require (alicenet + bobnet <= alice.balance + bob.balance);
 
-        uint net;
         if (msg.sender == ch.alice) {
-            net = alicenet;
-        } else {
-            net = bobnet;
+            return alicenet;
         }
 
-        msg.sender.transfer(net);
+        return bobnet;
+    }
 
+    function withdraw(uint channel) public noeth requireCounterpart(channel) requireClosedChannel(channel) {
+        uint net = getWithdrawalBalance(channel);
+        msg.sender.transfer(net);
         channels[channel].endpoints[msg.sender].paid = true;
     }
 }

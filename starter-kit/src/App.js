@@ -23,7 +23,8 @@ class App extends Component {
 
     this.state = {
       account: null,
-      channelId: null
+      channelId: null,
+      webSocket: null,
     };
 
     this.handleCounterpartAddressChange = this.handleCounterpartAddressChange.bind(this);
@@ -49,10 +50,11 @@ class App extends Component {
   }
 
   async componentDidMount() {
-
+    const webSocket = new WebSocket("ws://localhost:8080/ws");
+    webSocket.addEventListener('open', (event) => {
+      this.setState({webSocket})
+    })
   }
-
-
 
   async makeChannel() {
     const {
@@ -89,32 +91,6 @@ class App extends Component {
   }
 
 
-
-  async payment() {
-    const {
-      paymentValue,
-      myPrivateKeyHex,
-      channelId,
-      counterpartAddress,
-      qweb3,
-    } = this.state
-    const counterpartAddressHex = await qweb3.getHexAddress(counterpartAddress)
-    const payment = await this.createPayment(myPrivateKeyHex, channelId, `0x${counterpartAddressHex}`, paymentValue)
-    console.log(JSON.stringify(payment))
-  }
-
-  async createPayment(payerPrivateKey, channelId, recipient, value) {
-    console.log(`Creating a payment to ${recipient} with ${value} QTUM...`)
-    value = value * 1e8
-    const paymentHash = await web3.utils.soliditySha3(channelId, recipient, value)
-    const payment = {
-      sig: await sign(paymentHash, payerPrivateKey),
-      value: value,
-    }
-    console.log("Payment:", payment)
-    console.log()
-    return payment
-  }
 
   async next() {
     let func
@@ -234,7 +210,7 @@ class App extends Component {
   }
 
   renderContent() {
-    const {account, channelId} = this.state
+    const {account, channelId, webSocket} = this.state
     if (!account) {
       return <ImportWIF handleUpdateAccount={(acc) => this.handleUpdateAccount(acc)} />
     }
@@ -242,11 +218,16 @@ class App extends Component {
     if (!channelId) {
       return <MakeOrJoinChannel
         handleUpdateChannelId={(channelId) => this.handleUpdateChannelId(channelId)}
-        account={this.state.account}
+        account={account}
+        webSocket={webSocket}
       />
     }
 
-    return <ChannelInfo channelId={channelId} account={account} />
+    return <ChannelInfo
+      channelId={channelId}
+      account={account}
+      webSocket={webSocket}
+    />
   }
 
   handleUpdateChannelId(channelId) {

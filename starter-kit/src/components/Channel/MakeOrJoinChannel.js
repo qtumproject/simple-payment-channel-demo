@@ -100,7 +100,10 @@ export class MakeOrJoinChannel extends React.Component {
     if (!isMyChannel(this.props.account, channelId)) {
       throw new Error("invalid channel id")
     }
+    console.log("channelId:", channelId)
 
+    channelId = parseInt(channelId)
+    this.props.webSocket.send(JSON.stringify({type: 0, data: { channelId }}))
     this.props.handleUpdateChannelId(channelId)
   }
 
