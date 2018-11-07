@@ -1,7 +1,6 @@
 import React from 'react';
-import { Card } from 'antd';
-import {searchLogs, getDepositValue, claim} from '../Contract/Contract'
-import { Layout, Button, Input, Steps, message} from 'antd';
+import { claim} from '../Contract/Contract'
+import { Button } from 'antd';
 
 export class Claim extends React.Component {
     async claim() {

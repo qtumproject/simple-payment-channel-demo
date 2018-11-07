@@ -1,7 +1,6 @@
 import React from 'react';
-import { Card } from 'antd';
-import { searchLogs, getDepositValue, withdraw } from '../Contract/Contract'
-import { Layout, Button, Input, Steps, message } from 'antd';
+import { withdraw } from '../Contract/Contract'
+import { Button } from 'antd';
 
 export class Withdraw extends React.Component {
   async withdraw() {

@@ -31,25 +31,8 @@ export default class WalletRPCProvider {
           gasPrice: args[4] * 1e8,
           // feeRate?: number
         })
-      // case 'callcontract':
-      //   /*
-      //   $ qcli help callcontract
-      //   callcontract "address" "data" ( address )
 
-      //   Argument:
-      //   1. "address"          (string, required) The account address
-      //   2. "data"             (string, required) The data hex string
-      //   3. address              (string, optional) The sender address hex string
-      //   4. gasLimit             (string, optional) The gas limit for executing the contract
-      //   */
-      //  console.log(method, args)
-      //   return this.wallet.contractCall(args[0], args[1], {
-      //     gasLimit: args[3],
-      //   })
       default:
-        if (method === "callcontract" && args[1].startsWith("f158d92d")) {
-          console.log(method, args)
-        }
         return this.httpProvider.rawCall(method, args)
     }
   }

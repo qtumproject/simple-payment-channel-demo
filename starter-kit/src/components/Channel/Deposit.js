@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout, Button, Input, Steps, message} from 'antd';
+import { Input } from 'antd';
 import {getTransactionReceipt} from '../../utils/contract';
 const Search = Input.Search;
 
@@ -13,7 +13,7 @@ export class Deposit extends React.Component {
     }
 
     const txid = await contract.send('deposit', {
-      amount: value * 1e8,  // 1 QTUM = 10^8 Satoshi
+      amount: parseInt(value * 1e8),  // 1 QTUM = 10^8 Satoshi
       methodArgs: [channelId],    // Sets the function params
       gasLimit: 1000000,  // Sets the gas limit to 1 million
       senderAddress: account.address,

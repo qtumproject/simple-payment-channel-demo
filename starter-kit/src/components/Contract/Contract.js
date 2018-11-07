@@ -1,8 +1,5 @@
 import DuplexChannelArtifact from './DuplexChannel.json';
 import {getTransactionReceipt} from '../../utils/contract'
-import Web3 from 'web3'
-
-const web3 = new Web3();
 
 export async function getContract(qweb3) {
   const contractAddress = DuplexChannelArtifact["networks"]["regtest"]["address"]
@@ -75,11 +72,6 @@ export async function verify(contract,sender, payment) {
     gasLimit: 1000000,  // Sets the gas limit to 1 million
     senderAddress: sender,
   })
-  console.log({
-    methodArgs: [channelId, recipient, value, sig.v, web3.utils.hexToUtf8(sig.r), web3.utils.hexToUtf8(sig.s)],    // Sets the function params
-    gasLimit: 1000000,  // Sets the gas limit to 1 million
-    senderAddress: sender,
-  })
 
   console.log(res)
   const executionResult = res["executionResult"]
@@ -101,12 +93,10 @@ export async function getWithdrawalBalance(contract, sender, channelId) {
   })
 
   const executionResult = res["executionResult"]
-  console.log(executionResult)
   if (executionResult && executionResult["excepted"] === "None") {
     const balance = parseInt(executionResult["output"], 16)
     return balance
   } else {
-    console.log("get withdrawal balance err")
     return 0
   }
 }

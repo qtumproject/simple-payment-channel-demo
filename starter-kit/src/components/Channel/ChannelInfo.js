@@ -6,6 +6,7 @@ import { Deposit } from './Deposit';
 import { MakePayment } from './MakePayment';
 import { Claim } from './Claim';
 
+
 export class ChannelInfo extends React.Component {
   constructor(props) {
     super(props);
@@ -13,7 +14,6 @@ export class ChannelInfo extends React.Component {
     this.state = {
       myDepositValue:0,
       bobDepositValue:0,
-      receivable:0,
       spend: 0,
       bobAddress: '',
       bobAddressHex: '',
@@ -63,25 +63,24 @@ export class ChannelInfo extends React.Component {
   componentDidMount() {
     this.loadChannelInfo()
 
-    let receivable = 0
     const latestPayment = this.loadLatestPayment()
     if (latestPayment) {
-      receivable = latestPayment.value
+      this.setState({latestPayment})
     }
 
     let spend = 0
     let latestSpend = this.loadLatestSpend()
     if (latestSpend) {
       spend = latestSpend.value
+      this.setState({spend})
     }
-
-    this.setState({receivable, spend, latestPayment})
 
     this.props.webSocket.addEventListener('message', (event) => this.handleMessage(event))
   }
 
   componentWillUnmount() {
-    clearTimeout(this.timerID);
+    clearTimeout(this.timerID)
+    this.timerID = undefined
   }
 
   async getCurrentBlock() {
@@ -106,7 +105,7 @@ export class ChannelInfo extends React.Component {
 
     this.persistLatestPayment(latestPayment)
 
-    this.setState({receivable: latestPayment.value})
+    this.setState({latestPayment})
   }
 
   async getLogs() {
@@ -118,8 +117,6 @@ export class ChannelInfo extends React.Component {
       toBlock: -1,
       addresses: [account.contract.address],
     })
-
-    // 9f4e0d16577d705169224549bfbc339ebecaf2a6f875cdbc9268c898d57c77b1 is LogChannel event
 
     await logs.forEach(async (log) => {
       await log.log.forEach(async (l) => {
@@ -164,7 +161,6 @@ export class ChannelInfo extends React.Component {
 
     const isOpening = !await channelClosed(account.contract, channelId)
     const currentBlock = await this.getCurrentBlock()
-    await this.getLogs()
 
     let bobDepositValue = 0
     if (bobAddressHex) {
@@ -185,9 +181,13 @@ export class ChannelInfo extends React.Component {
       withdrawalBalance,
     })
 
-    if (isOpening) {
-      this.timerID = setTimeout(() => this.loadChannelInfo(), 1000)
-    }
+    this.timerID = setTimeout(async () => {
+      if (!this.timerID) {
+        return
+      }
+      await this.loadChannelInfo()
+      await this.getLogs()
+    }, 1000)
   }
 
   async onPayment(payment) {
@@ -208,15 +208,17 @@ export class ChannelInfo extends React.Component {
 
   render() {
     const {
-      myDepositValue, bobDepositValue, receivable, spend, bobAddress, bobAddressHex, isOpening, currentBlock, expireBlock,
+      myDepositValue, bobDepositValue, latestPayment, spend,
+      bobAddress, bobAddressHex, isOpening, currentBlock, expireBlock,
     } = this.state
+    const receivable = latestPayment.value
     return <div style={{ background: '#ECECEC', padding: '30px' }}>
       <Card title={`channel id ${this.props.channelId}`} bordered={false}>
         <p>My deposit value: {myDepositValue/1e8} QTUM</p>
+        <p>My net balance: {(myDepositValue+receivable - spend)/1e8} QTUM <span>(=myDepositValue + receivable - spend)</span></p>
         <p>Bob deposit value: {bobDepositValue/1e8} QTUM</p>
         <p>Receivable: {receivable/1e8} QTUM</p>
         <p>Spend: {spend/1e8} QTUM</p>
-        <p>Due balance: {(myDepositValue+receivable - spend)/1e8} QTUM <span>(=myDepositValue + receviable - spend)</span></p>
         <p>Bob address: {bobAddress}</p>
         <p>Bob hex address: {bobAddressHex}</p>
         <p>Is opening: {isOpening ? 'Open' : 'Closed'}</p>
@@ -230,14 +232,14 @@ export class ChannelInfo extends React.Component {
   }
 
   renderButtons() {
-    const { isOpening, receivable, myDepositValue, spend, bobAddressHex, withdrawalBalance, latestPayment} = this.state
+    const { isOpening, myDepositValue, spend, bobAddressHex, withdrawalBalance, latestPayment} = this.state
     const { channelId, account } = this.props
     let btns
     if (isOpening) {
       btns = <>
         <p><Deposit account={account} channelId={channelId} /></p>
         <p><MakePayment
-          receivable={receivable}
+          receivable={latestPayment.value}
           myDepositValue={myDepositValue}
           spend={spend}
           account={account}

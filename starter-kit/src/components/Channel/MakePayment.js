@@ -1,7 +1,5 @@
 import React from 'react';
-import { Card } from 'antd';
-import {searchLogs, getDepositValue} from '../Contract/Contract'
-import { Layout, Button, Input, Steps, message} from 'antd';
+import { Input } from 'antd';
 import Web3 from 'web3'
 import {sign} from '../../utils/crypto'
 
@@ -35,7 +33,7 @@ export class MakePayment extends React.Component {
 
   async createPayment(payerPrivateKey, channelId, recipient, value) {
     console.log(`Creating a payment to ${recipient} with ${value} QTUM...`)
-    value = value * 1e8
+    value = parseInt(value * 1e8)
     const paymentHash = await web3.utils.soliditySha3(channelId, recipient, value)
     const timestamp = parseInt(new Date().getTime() / 1000);
     const payment = {

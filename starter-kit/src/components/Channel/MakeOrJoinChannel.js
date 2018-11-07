@@ -64,7 +64,6 @@ class JoinChannel extends React.Component {
 
   async joinChannel() {
     this.props.handleUpdateChannelId(this.state.channelId)
-    window.localStorage.setItem("lastJoinedChannelId", this.state.channelId)
   }
 
   render() {
@@ -100,11 +99,11 @@ export class MakeOrJoinChannel extends React.Component {
     if (!isMyChannel(this.props.account, channelId)) {
       throw new Error("invalid channel id")
     }
-    console.log("channelId:", channelId)
 
     channelId = parseInt(channelId)
     this.props.webSocket.send(JSON.stringify({type: 0, data: { channelId }}))
     this.props.handleUpdateChannelId(channelId)
+    window.localStorage.setItem("lastJoinedChannelId", channelId)
   }
 
   renderContent() {
