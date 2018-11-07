@@ -2,11 +2,24 @@
 
 see: https://www.blunderingcode.com/a-lightning-network-in-two-pages-of-solidity/
 
+[State Channel Starter Kit](./starter-kit)
+
+## Prepare environment
+
+```
+make start-services
+# wait maybe 20 seconds
+sleep 20
+make prefund
+make migrate
+```
+
 ## Install
 
 ```
 $ yarn
 ```
+
 
 ## Unidirectional channel
 

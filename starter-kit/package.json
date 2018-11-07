@@ -6,7 +6,7 @@
     "antd": "^3.10.3",
     "qtumcore-lib": "^0.0.1",
     "qtumjs-wallet": "^0.2.1",
-    "qweb3": "^1.2.2",
+    "qweb3": "dcb9/qweb3.js",
     "react": "^16.6.0",
     "react-dom": "^16.6.0",
     "react-scripts": "2.1.0",
