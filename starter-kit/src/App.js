@@ -19,7 +19,7 @@ class App extends Component {
   }
 
   async componentDidMount() {
-    const webSocket = new WebSocket("ws://localhost:8080/ws");
+    const webSocket = new WebSocket("ws://localhost:3008/ws");
     webSocket.addEventListener('open', (event) => {
       this.setState({webSocket})
     })

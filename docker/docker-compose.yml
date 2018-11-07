@@ -25,3 +25,8 @@ services:
     ports:
     - "23889:23889"
 
+  starter-kit-server:
+    build: ./starter-kit-server
+    ports:
+    - "3008:8080"
+
