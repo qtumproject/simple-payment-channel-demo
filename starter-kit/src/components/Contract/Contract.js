@@ -85,6 +85,20 @@ export async function verify(contract,sender, payment) {
 }
 
 
+export async function getExpireBlock(contract, channelId) {
+  const res = await contract.call('getExpireBlock', {
+    methodArgs: [channelId],    // Sets the function params
+    gasLimit: 1000000,  // Sets the gas limit to 1 million
+    senderAddress: '',
+  })
+
+  const executionResult = res["executionResult"]
+  if (executionResult && executionResult["excepted"] === "None") {
+    return parseInt(executionResult["output"], 16)
+  } else {
+    return 0
+  }
+}
 export async function getWithdrawalBalance(contract, sender, channelId) {
   const res = await contract.call('getWithdrawalBalance', {
     methodArgs: [channelId],    // Sets the function params

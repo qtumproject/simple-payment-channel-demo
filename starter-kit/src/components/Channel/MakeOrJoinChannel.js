@@ -96,8 +96,6 @@ export class MakeOrJoinChannel extends React.Component {
 
   handleBack() { this.setState({showMakeingChannel: false, showJoiningChannel: false}) }
 
-  render() { return <div>{this.renderContent()}</div> }
-
   handleUpdateChannelId(channelId) {
     if (!isMyChannel(this.props.account, channelId)) {
       throw new Error("invalid channel id")
@@ -107,6 +105,10 @@ export class MakeOrJoinChannel extends React.Component {
     this.props.webSocket.send(JSON.stringify({type: 0, data: { channelId }}))
     this.props.handleUpdateChannelId(channelId)
     window.localStorage.setItem("lastJoinedChannelId", channelId)
+  }
+
+  render() {
+    return <div>{this.renderContent()}</div>
   }
 
   renderContent() {
@@ -127,8 +129,7 @@ export class MakeOrJoinChannel extends React.Component {
 
     return <Card title="Create or join a channel" bordered={false}>
       <Button onClick={() => this.makeChannel()}>Create a channel</Button>
-      <br />
-      <br />
+      <br /><br />
       <Button onClick={() => this.joinChannel()}>Join a channel</Button>
     </Card>
   }

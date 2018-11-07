@@ -22,7 +22,7 @@ function getECrecoveryAddress(privateKeyHex) {
   return address
 }
 
-export async function importWIF(wifKey) {
+async function importWIF(wifKey) {
   const network = networks.regtest
   const wallet = network.fromWIF(wifKey)
   console.log("wallet", wallet)
@@ -63,7 +63,6 @@ export class ImportWIF extends React.Component {
     this.setState({wifKey})
   }
 
-  handlePrivateKeyChange(e) { this.setState({wifKey: e.target.value}) }
   async handleImport() {
     const account = await importWIF(this.state.wifKey)
     window.localStorage.setItem('wifKey', this.state.wifKey)
@@ -73,9 +72,8 @@ export class ImportWIF extends React.Component {
 
   render() {
     return <Card title="Import WIF key" bordered={false}>
-      <Input onChange={(e) => this.handlePrivateKeyChange(e)} value={this.state.wifKey}></Input>
-      <br />
-      <br />
+      <Input onChange={(e) => this.setState({wifKey: e.target.value}) } value={this.state.wifKey}></Input>
+      <br /><br />
       <Button onClick={() => this.handleImport()}>Import</Button>
     </Card>
   }

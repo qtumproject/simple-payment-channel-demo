@@ -1,11 +1,12 @@
 import React from 'react';
 import { Card } from 'antd';
-import {searchLogs, getDepositValue, channelClosed, getWithdrawalBalance, verify} from '../Contract/Contract'
+import {searchLogs, getDepositValue, channelClosed, getWithdrawalBalance, verify, getExpireBlock} from '../Contract/Contract'
 import { Withdraw } from './Withdraw';
 import { Deposit } from './Deposit';
 import { MakePayment } from './MakePayment';
 import { Claim } from './Claim';
 
+const _ = require('lodash');
 
 export class ChannelInfo extends React.Component {
   constructor(props) {
@@ -108,70 +109,70 @@ export class ChannelInfo extends React.Component {
     this.setState({latestPayment})
   }
 
-  async getLogs() {
+  async getBobInfo() {
     const {qweb3} = this.state
     const { channelId, account } = this.props
 
-    const logs = await searchLogs(qweb3, {
+    let logs = await searchLogs(qweb3, {
       fromBlock: this.fromBlock,
       toBlock: -1,
       addresses: [account.contract.address],
     })
 
-    await logs.forEach(async (log) => {
-      await log.log.forEach(async (l) => {
-        switch(l._eventName) {
-          case 'LogChannel':
-            const channelNum = parseInt(l.channelnum.toString(16), 16)
-            if (channelNum === parseInt(channelId, 10)) {
-              let bobAddressHex
-              if (l.bob === account.addressHex) {
-                bobAddressHex = l.user
-              } else if (l.user === account.addressHex) {
-                bobAddressHex = l.bob
-              } else {
-                console.log(`you are neither Alice nor Bob of the channel ${channelId}`)
-                return
-              }
-
-              const expireBlock = parseInt(l.expireblock.toString(16), 16)
-              const bobAddress = await qweb3.fromHexAddress(bobAddressHex)
-
-              this.setState({
-                expireBlock,
-                bobAddressHex,
-                bobAddress,
-              })
-            }
-          break;
-          default:
-          break;
-        }
-      })
-    })
-
     if (logs.length > 0) {
       this.fromBlock = logs[logs.length-1].blockNumber + 1
     }
+
+    logs = _.filter(logs, (log) => log.log.length > 0)
+    logs = _.map(logs, (log) => {
+      return log.log[0]
+    })
+
+    const makeChannelLogs = _.filter(logs, (log) => log._eventName === 'LogChannel')
+    _.each(makeChannelLogs, async (l) => {
+      const channelNum = parseInt(l.channelnum.toString(16), 16)
+      if (channelNum !== parseInt(channelId, 10)) {
+        return
+      }
+
+      let bobAddressHex
+      if (l.bob === account.addressHex) {
+        bobAddressHex = l.user
+      } else if (l.user === account.addressHex) {
+        bobAddressHex = l.bob
+      } else {
+        console.log(`you are neither Alice nor Bob of the channel ${channelId}`)
+        return
+      }
+
+      const bobAddress = await qweb3.fromHexAddress(bobAddressHex)
+
+      this.setState({
+        bobAddressHex,
+        bobAddress,
+      })
+    })
   }
 
   async loadChannelInfo() {
     const { channelId, account } = this.props
     const {bobAddressHex} = this.state
+    const {contract, address, addressHex} = account
 
-    const isOpening = !await channelClosed(account.contract, channelId)
+    const isOpening = !await channelClosed(contract, channelId)
     const currentBlock = await this.getCurrentBlock()
 
     let bobDepositValue = 0
     if (bobAddressHex) {
-      bobDepositValue = await getDepositValue(account.contract, bobAddressHex, channelId)
+      bobDepositValue = await getDepositValue(contract, bobAddressHex, channelId)
     }
-    const myDepositValue = await getDepositValue(account.contract, account.addressHex, channelId)
+    const myDepositValue = await getDepositValue(contract, addressHex, channelId)
 
     let withdrawalBalance = 0;
     if (!isOpening) {
-      withdrawalBalance = await getWithdrawalBalance(account.contract, account.address, channelId)
+      withdrawalBalance = await getWithdrawalBalance(contract, address, channelId)
     }
+    const expireBlock = await getExpireBlock(contract, channelId)
 
     this.setState({
       currentBlock,
@@ -179,6 +180,7 @@ export class ChannelInfo extends React.Component {
       myDepositValue,
       isOpening,
       withdrawalBalance,
+      expireBlock,
     })
 
     this.timerID = setTimeout(async () => {
@@ -186,7 +188,7 @@ export class ChannelInfo extends React.Component {
         return
       }
       await this.loadChannelInfo()
-      await this.getLogs()
+      await this.getBobInfo()
     }, 1000)
   }
 

@@ -20,64 +20,12 @@ make migrate
 $ yarn
 ```
 
-
-## Unidirectional channel
-
-### test
-
-```
-$ npm run ganache
-
-$ truffle migrate --reset
-
-$ node unidirectionChannel.js new 5
-payer: 0x5b2DacD317FD24e811Fbe6e6389Ab3da7FbB55e6
-Creating a new channel...
-New channel id: 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563
-
-$ node unidirectionChannel.js payment 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563 1
-Payer is creating a payment...
-Payment: {
-  "sig": {
-    "r": "0xd06daf9d8dbd4fec204428dc29c0fac91f438f941e4182e6970e292d497e58f4",
-    "s": "0x4ee0913b764ba9cfc8b7bdae1f3e5c1cb2d48ce85114a4fbb5abf9ff8a7057b8",
-    "v": "0x1b"
-  },
-  "value": "1000000000000000000"
-}
-
-# beneficiary
-
-$ node unidirectionChannel.js verify 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563 1000000000000000000 0x1b 0xd06daf9d8dbd4fec204428dc29c0fac91f438f941e4182e6970e292d497e58f4 0x4ee0913b764ba9cfc8b7bdae1f3e5c1cb2d48ce85114a4fbb5abf9ff8a7057b8
-Verifying the payment...
-Verified
-
-$ node unidirectionChannel.js claim 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563 1000000000000000000 0x1b 0xd06daf9d8dbd4fec204428dc29c0fac91f438f941e4182e6970e292d497e58f4 0x4ee0913b764ba9cfc8b7bdae1f3e5c1cb2d48ce85114a4fbb5abf9ff8a7057b8
-Done
-
-
-# payer
-
-$ node unidirectionChannel.js reclaim 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563
-Done
-
-$ node unidirectionChannel.js payer-balance
-payer balance: 98.66493272
-
-$ node unidirectionChannel.js beneficiary-balance
-beneficiary balance: 100.99913338
-```
-
 ## Duplex channel
 
 ### test
 
 
 ```
-$ npm run ganache
-
-$ truffle migrate --reset
-
 $ rm -rf .cache
 $ node duplexChannel.js new
 alice: 0x5b2DacD317FD24e811Fbe6e6389Ab3da7FbB55e6

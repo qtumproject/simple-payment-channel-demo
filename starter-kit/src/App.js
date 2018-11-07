@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import 'antd/dist/antd.css';
 import './App.css';
 import {MakeOrJoinChannel} from './components/Channel/MakeOrJoinChannel'
-import { Layout, Button, Card } from 'antd';
+import { Layout } from 'antd';
 import { ImportWIF } from './components/Wallet/ImportWIF';
 import { ChannelInfo } from './components/Channel/ChannelInfo';
 import { MyInfo } from './components/MyInfo';
@@ -46,7 +46,7 @@ class App extends Component {
             </div>
           </Content>
         </Layout>
-        <Footer>Starter kit ©2018 Created by <a href="https://github.com/dcb9">dcb9</a></Footer>
+        <Footer style={{textAlign: 'center'}}>Starter kit ©2018 Created by <a href="https://github.com/dcb9">dcb9</a></Footer>
       </Layout>
     );
   }
@@ -59,6 +59,7 @@ class App extends Component {
 
     return <MyInfo account={account} onCreateOrJoinChannel={() => this.setState({ channelId: null })}/>
   }
+
   renderContent() {
     const {account, channelId, webSocket} = this.state
     if (!account) {

@@ -131,6 +131,10 @@ contract DuplexChannel  {
         return channels[channel].endpoints[owner].balance;
     }
 
+    function getExpireBlock(uint channel) public view returns (uint) {
+        return channels[channel].expireblock;
+    }
+
     function getWithdrawalBalance(uint channel)
         public view noeth
         requireCounterpart(channel) requireClosedChannel(channel)
