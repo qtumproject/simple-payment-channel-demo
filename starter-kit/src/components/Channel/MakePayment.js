@@ -8,21 +8,12 @@ const web3 = new Web3();
 
 export class MakePayment extends React.Component {
 
-// receivable={receivable}
-// myDepositValue={myDepositValue}
-// spend={spend}
-// account={account}
-// channelId={channelId}
-
   async payment(value) {
     const {bobAddressHex, channelId, account, spend, myDepositValue, receivable, onPayment} = this.props
-    if (value * 1e8 < spend) {
-      alert('value must be larger than latest payment')
-      return
-    }
+    value = parseInt(value * 1e8 + spend)
 
     if (myDepositValue + receivable < value) {
-      alert('invalid value')
+      alert('you dont have enough amount')
       return
     }
 
@@ -33,7 +24,6 @@ export class MakePayment extends React.Component {
 
   async createPayment(payerPrivateKey, channelId, recipient, value) {
     console.log(`Creating a payment to ${recipient} with ${value} QTUM...`)
-    value = parseInt(value * 1e8)
     const paymentHash = await web3.utils.soliditySha3(channelId, recipient, value)
     const timestamp = parseInt(new Date().getTime() / 1000);
     const payment = {

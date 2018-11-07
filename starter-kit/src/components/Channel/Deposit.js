@@ -26,7 +26,6 @@ export class Deposit extends React.Component {
     console.log("receipt", receipt)
     if (receipt.excepted === 'None') {
       console.log("Success: deposit to channel")
-      alert(`Deposited ${value} QTUM to channel`)
       this.setState({value: 0})
     } else {
       alert('deposit error')

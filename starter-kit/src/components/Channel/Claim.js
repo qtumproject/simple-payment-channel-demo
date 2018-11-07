@@ -11,6 +11,6 @@ export class Claim extends React.Component {
     }
 
     render() {
-        return <Button type="primary" onClick={() => this.claim()}>Claim</Button>
+        return <Button type="primary" disabled={this.props.payment.value<=0} onClick={() => this.claim()}>Claim</Button>
     }
 }
