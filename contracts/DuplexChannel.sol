@@ -27,7 +27,7 @@ contract DuplexChannel  {
         return channels[channel].alice == msg.sender || channels[channel].bob == msg.sender;
     }
 
-    uint finalizationDelay = 10000;
+    uint finalizationDelay = 50;
 
     event LogChannel(address indexed user, address indexed bob, uint indexed expireblock, uint channelnum);
     event LogClaim(uint indexed channel);
