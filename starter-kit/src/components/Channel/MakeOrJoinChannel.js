@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Input } from 'antd';
+import { Button, Input, Card } from 'antd';
 import {getTransactionReceipt} from '../../utils/contract'
 import {isMyChannel} from './Channel'
 
@@ -37,14 +37,16 @@ class MakeChannel extends React.Component {
   }
 
   render() {
-    return <>
-      <label>Bob address:</label>
+    return <Card title="Create a channel" bordered={false}>
+      <label>Bob address</label>
       <Input onChange={(e) => this.setState({address: e.target.value})} value={this.state.address}></Input>
-      <label>Bob EC recovery address:</label>
+      <br /><br />
+      <label>Bob EC recovery address</label>
       <Input onChange={(e) => this.setState({ecRecoveryAddress: e.target.value})} value={this.state.ecRecoveryAddress}></Input>
+      <br /><br />
       <Button onClick={() => this.makeChannel()}>Make a channel</Button>
-      <Button onClick={this.props.handleBack}>Back</Button>
-    </>
+      <Button style={{marginLeft: '10px'}} onClick={this.props.handleBack}>Back</Button>
+    </Card>
   }
 }
 
@@ -67,12 +69,13 @@ class JoinChannel extends React.Component {
   }
 
   render() {
-    return <>
-      <label>channel id:</label>
+    return <Card title="Join a channel" bordered={false}>
+      <label>channel id</label>
       <Input onChange={(e) => this.setState({channelId: e.target.value})} value={this.state.channelId}></Input>
+      <br /><br />
       <Button onClick={() => this.joinChannel()}>Join</Button>
-      <Button onClick={this.props.handleBack}>Back</Button>
-    </>
+      <Button style={{marginLeft: '10px'}} onClick={this.props.handleBack}>Back</Button>
+    </Card>
   }
 }
 
@@ -122,11 +125,11 @@ export class MakeOrJoinChannel extends React.Component {
       />
     }
 
-    return <>
-      <Button onClick={() => this.makeChannel()}>Create</Button>
-      /
-      <Button onClick={() => this.joinChannel()}>Join</Button>
-      a channel
-    </>
+    return <Card title="Create or join a channel" bordered={false}>
+      <Button onClick={() => this.makeChannel()}>Create a channel</Button>
+      <br />
+      <br />
+      <Button onClick={() => this.joinChannel()}>Join a channel</Button>
+    </Card>
   }
 }

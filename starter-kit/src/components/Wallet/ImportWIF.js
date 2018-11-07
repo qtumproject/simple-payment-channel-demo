@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Input } from 'antd';
+import { Button, Input, Card } from 'antd';
 import { networks } from "qtumjs-wallet"
 import { PrivateKey } from 'qtumcore-lib';
 import {getContract} from '../Contract/Contract'
@@ -72,10 +72,11 @@ export class ImportWIF extends React.Component {
   }
 
   render() {
-    return <p>
-      <label>WIF Key</label>
+    return <Card title="Import WIF key" bordered={false}>
       <Input onChange={(e) => this.handlePrivateKeyChange(e)} value={this.state.wifKey}></Input>
+      <br />
+      <br />
       <Button onClick={() => this.handleImport()}>Import</Button>
-    </p>
+    </Card>
   }
 }

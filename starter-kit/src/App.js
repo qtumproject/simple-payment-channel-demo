@@ -2,9 +2,10 @@ import React, { Component } from 'react';
 import 'antd/dist/antd.css';
 import './App.css';
 import {MakeOrJoinChannel} from './components/Channel/MakeOrJoinChannel'
-import { Layout, Button } from 'antd';
+import { Layout, Button, Card } from 'antd';
 import { ImportWIF } from './components/Wallet/ImportWIF';
 import { ChannelInfo } from './components/Channel/ChannelInfo';
+import { MyInfo } from './components/MyInfo';
 const { Header, Footer, Sider, Content } = Layout;
 
 class App extends Component {
@@ -38,8 +39,12 @@ class App extends Component {
       <Layout>
         <Header className="header"><h1>Starter kit <span>a State Channel demo in QTUM</span></h1></Header>
         <Layout>
-           {this.renderSider()}
-          <Content>{this.renderContent()}</Content>
+          <Sider theme="light">{this.renderSider()}</Sider>
+          <Content style={{background: '#ECECEC' }}>
+            <div style={{ padding: '30px' }}>
+              {this.renderContent()}
+            </div>
+          </Content>
         </Layout>
         <Footer>Starter kit ©2018 Created by <a href="https://github.com/dcb9">dcb9</a></Footer>
       </Layout>
@@ -47,17 +52,12 @@ class App extends Component {
   }
 
   renderSider() {
-    return <Sider theme="light">
-      <h3>My Info</h3>
-      <p>Address: </p>
-      <p>Address hex: </p>
-      <p>Balance: </p>
-      <br />
-      <br />
-      <h3>Channels</h3>
-      <p>id: xxx, bob: xxx</p>
-      <p><Button onClick={() => this.setState({channelId: null})}>Create / Join</Button></p>
-    </Sider>
+    const { account } = this.state
+    if (!account) {
+      return <p>Please import your private key</p>
+    }
+
+    return <MyInfo account={account} onCreateOrJoinChannel={() => this.setState({ channelId: null })}/>
   }
   renderContent() {
     const {account, channelId, webSocket} = this.state

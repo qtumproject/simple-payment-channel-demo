@@ -212,23 +212,21 @@ export class ChannelInfo extends React.Component {
       bobAddress, bobAddressHex, isOpening, currentBlock, expireBlock,
     } = this.state
     const receivable = latestPayment.value
-    return <div style={{ background: '#ECECEC', padding: '30px' }}>
-      <Card title={`channel id ${this.props.channelId}`} bordered={false}>
-        <p>My deposit value: {myDepositValue/1e8} QTUM</p>
-        <p>My net balance: {(myDepositValue+receivable - spend)/1e8} QTUM <span>(=myDepositValue + receivable - spend)</span></p>
-        <p>Bob deposit value: {bobDepositValue/1e8} QTUM</p>
-        <p>Receivable: {receivable/1e8} QTUM</p>
-        <p>Spend: {spend/1e8} QTUM</p>
-        <p>Bob address: {bobAddress}</p>
-        <p>Bob hex address: {bobAddressHex}</p>
-        <p>Is opening: {isOpening ? 'Open' : 'Closed'}</p>
-        <p>Current block: {currentBlock}</p>
-        <p>Expire block: {expireBlock}</p>
+    return <Card title={`channel id ${this.props.channelId}`} bordered={false}>
+      <p>My deposit value: {myDepositValue/1e8} QTUM</p>
+      <p>My net balance: {(myDepositValue+receivable - spend)/1e8} QTUM <span>(=myDepositValue + receivable - spend)</span></p>
+      <p>Bob deposit value: {bobDepositValue/1e8} QTUM</p>
+      <p>Receivable: {receivable/1e8} QTUM</p>
+      <p>Spend: {spend/1e8} QTUM</p>
+      <p>Bob address: {bobAddress}</p>
+      <p>Bob hex address: {bobAddressHex}</p>
+      <p>Is opening: {isOpening ? 'Open' : 'Closed'}</p>
+      <p>Current block: {currentBlock}</p>
+      <p>Expire block: {expireBlock}</p>
 
-        <br />
-        {this.renderButtons()}
-      </Card>
-    </div>
+      <br />
+      {this.renderButtons()}
+    </Card>
   }
 
   renderButtons() {
