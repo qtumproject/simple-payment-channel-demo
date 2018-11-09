@@ -38,10 +38,10 @@ class MakeChannel extends React.Component {
 
   render() {
     return <Card title="Create a channel" bordered={false}>
-      <label>Bob address</label>
+      <label>Recipient address</label>
       <Input onChange={(e) => this.setState({address: e.target.value})} value={this.state.address}></Input>
       <br /><br />
-      <label>Bob EC recovery address</label>
+      <label>Recipient EC recovery address</label>
       <Input onChange={(e) => this.setState({ecRecoveryAddress: e.target.value})} value={this.state.ecRecoveryAddress}></Input>
       <br /><br />
       <Button onClick={() => this.makeChannel()}>Make a channel</Button>

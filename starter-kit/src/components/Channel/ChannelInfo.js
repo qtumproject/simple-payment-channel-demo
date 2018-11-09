@@ -1,36 +1,43 @@
-import React from 'react';
-import { Card } from 'antd';
-import {searchLogs, getDepositValue, channelClosed, getWithdrawalBalance, verify, getExpireBlock} from '../Contract/Contract'
-import { Withdraw } from './Withdraw';
-import { Deposit } from './Deposit';
-import { MakePayment } from './MakePayment';
-import { Claim } from './Claim';
+import React from "react"
+import { Card } from "antd"
+import {
+  searchLogs,
+  getDepositValue,
+  channelClosed,
+  getWithdrawalBalance,
+  verify,
+  getExpireBlock,
+} from "../Contract/Contract"
+import { Withdraw } from "./Withdraw"
+import { Deposit } from "./Deposit"
+import { MakePayment } from "./MakePayment"
+import { Claim } from "./Claim"
 
-const _ = require('lodash');
+const _ = require("lodash")
 
 export class ChannelInfo extends React.Component {
   constructor(props) {
-    super(props);
+    super(props)
 
     this.state = {
-      myDepositValue:0,
-      bobDepositValue:0,
+      myDepositValue: 0,
+      bobDepositValue: 0,
       spend: 0,
-      bobAddress: '',
-      bobAddressHex: '',
+      bobAddress: "",
+      bobAddressHex: "",
       isOpening: false,
       currentBlock: 0,
       expireBlock: 0,
       qweb3: this.props.account.qweb3,
       withdrawalBalance: 0,
-      latestPayment: {value: 0},
-    };
+      latestPayment: { value: 0 },
+    }
 
-    this.fromBlock=  0
+    this.fromBlock = 0
   }
 
   latestPaymentKey() {
-    const {account, channelId} = this.props
+    const { account, channelId } = this.props
     return `latest-payment-${account.contract.address}-${channelId}`
   }
 
@@ -42,11 +49,14 @@ export class ChannelInfo extends React.Component {
   }
 
   persistLatestPayment(payment) {
-    window.localStorage.setItem(this.latestPaymentKey(), JSON.stringify(payment))
+    window.localStorage.setItem(
+      this.latestPaymentKey(),
+      JSON.stringify(payment),
+    )
   }
 
   latestSpendKey() {
-    const {account, channelId} = this.props
+    const { account, channelId } = this.props
     return `latest-spend-${account.contract.address}-${channelId}`
   }
 
@@ -66,17 +76,19 @@ export class ChannelInfo extends React.Component {
 
     const latestPayment = this.loadLatestPayment()
     if (latestPayment) {
-      this.setState({latestPayment})
+      this.setState({ latestPayment })
     }
 
     let spend = 0
     let latestSpend = this.loadLatestSpend()
     if (latestSpend) {
       spend = latestSpend.value
-      this.setState({spend})
+      this.setState({ spend })
     }
 
-    this.props.webSocket.addEventListener('message', (event) => this.handleMessage(event))
+    this.props.webSocket.addEventListener("message", (event) =>
+      this.handleMessage(event),
+    )
   }
 
   componentWillUnmount() {
@@ -94,9 +106,9 @@ export class ChannelInfo extends React.Component {
     const { account } = this.props
     const payment = JSON.parse(event.data)
     console.log("received payment info:", payment)
-    if (!await verify(account.contract, account.address, payment)) {
-      alert('invalid payment')
-      throw new Error('invalid payment')
+    if (!(await verify(account.contract, account.address, payment))) {
+      alert("invalid payment")
+      throw new Error("invalid payment")
     }
 
     let latestPayment = this.loadLatestPayment()
@@ -106,11 +118,11 @@ export class ChannelInfo extends React.Component {
 
     this.persistLatestPayment(latestPayment)
 
-    this.setState({latestPayment})
+    this.setState({ latestPayment })
   }
 
   async getBobInfo() {
-    const {qweb3} = this.state
+    const { qweb3 } = this.state
     const { channelId, account } = this.props
 
     let logs = await searchLogs(qweb3, {
@@ -120,7 +132,7 @@ export class ChannelInfo extends React.Component {
     })
 
     if (logs.length > 0) {
-      this.fromBlock = logs[logs.length-1].blockNumber + 1
+      this.fromBlock = logs[logs.length - 1].blockNumber + 1
     }
 
     logs = _.filter(logs, (log) => log.log.length > 0)
@@ -128,7 +140,10 @@ export class ChannelInfo extends React.Component {
       return log.log[0]
     })
 
-    const makeChannelLogs = _.filter(logs, (log) => log._eventName === 'LogChannel')
+    const makeChannelLogs = _.filter(
+      logs,
+      (log) => log._eventName === "LogChannel",
+    )
     _.each(makeChannelLogs, async (l) => {
       const channelNum = parseInt(l.channelnum.toString(16), 16)
       if (channelNum !== parseInt(channelId, 10)) {
@@ -156,21 +171,33 @@ export class ChannelInfo extends React.Component {
 
   async loadChannelInfo() {
     const { channelId, account } = this.props
-    const {bobAddressHex} = this.state
-    const {contract, address, addressHex} = account
+    const { bobAddressHex } = this.state
+    const { contract, address, addressHex } = account
 
-    const isOpening = !await channelClosed(contract, channelId)
+    const isOpening = !(await channelClosed(contract, channelId))
     const currentBlock = await this.getCurrentBlock()
 
     let bobDepositValue = 0
     if (bobAddressHex) {
-      bobDepositValue = await getDepositValue(contract, bobAddressHex, channelId)
+      bobDepositValue = await getDepositValue(
+        contract,
+        bobAddressHex,
+        channelId,
+      )
     }
-    const myDepositValue = await getDepositValue(contract, addressHex, channelId)
+    const myDepositValue = await getDepositValue(
+      contract,
+      addressHex,
+      channelId,
+    )
 
-    let withdrawalBalance = 0;
+    let withdrawalBalance = 0
     if (!isOpening) {
-      withdrawalBalance = await getWithdrawalBalance(contract, address, channelId)
+      withdrawalBalance = await getWithdrawalBalance(
+        contract,
+        address,
+        channelId,
+      )
     }
     const expireBlock = await getExpireBlock(contract, channelId)
 
@@ -200,62 +227,93 @@ export class ChannelInfo extends React.Component {
     latestSpend = payment
 
     this.persistLatestSpend(latestSpend)
-    this.setState({spend: latestSpend.value})
+    this.setState({ spend: latestSpend.value })
 
-    return this.props.webSocket.send(JSON.stringify({
-      type: 1,
-      data: payment,
-    }))
+    return this.props.webSocket.send(
+      JSON.stringify({
+        type: 1,
+        data: payment,
+      }),
+    )
   }
 
   render() {
     const {
-      myDepositValue, bobDepositValue, latestPayment, spend,
-      bobAddress, bobAddressHex, isOpening, currentBlock, expireBlock,
+      myDepositValue,
+      bobDepositValue,
+      latestPayment,
+      spend,
+      bobAddress,
+      bobAddressHex,
+      isOpening,
+      currentBlock,
+      expireBlock,
     } = this.state
     const receivable = latestPayment.value
-    return <Card title={`channel id ${this.props.channelId}`} bordered={false}>
-      <p>My deposit value: {myDepositValue/1e8} QTUM</p>
-      <p>My net balance: {(myDepositValue+receivable - spend)/1e8} QTUM <span>(=myDepositValue + receivable - spend)</span></p>
-      <p>Bob deposit value: {bobDepositValue/1e8} QTUM</p>
-      <p>Receivable: {receivable/1e8} QTUM</p>
-      <p>Spend: {spend/1e8} QTUM</p>
-      <p>Bob address: {bobAddress}</p>
-      <p>Bob hex address: {bobAddressHex}</p>
-      <p>Is opening: {isOpening ? 'Open' : 'Closed'}</p>
-      <p>Current block: {currentBlock}</p>
-      <p>Expire block: {expireBlock}</p>
+    return (
+      <Card title={`channel id ${this.props.channelId}`} bordered={false}>
+        <p>My deposit value: {myDepositValue / 1e8} QTUM</p>
+        <p>
+          My net balance: {(myDepositValue + receivable - spend) / 1e8} QTUM{" "}
+          <span>(=myDepositValue + receivable - spend)</span>
+        </p>
+        <p>Counter-party deposit value: {bobDepositValue / 1e8} QTUM</p>
+        <p>Receivable: {receivable / 1e8} QTUM</p>
+        <p>Spend: {spend / 1e8} QTUM</p>
+        <p>Counter-party address: {bobAddress}</p>
+        <p>Counter-party hex address: {bobAddressHex}</p>
+        <p>Is opening: {isOpening ? "Open" : "Closed"}</p>
+        <p>Current block: {currentBlock}</p>
+        <p>Expire block: {expireBlock}</p>
 
-      <br />
-      {this.renderButtons()}
-    </Card>
+        <br />
+        {this.renderButtons()}
+      </Card>
+    )
   }
 
   renderButtons() {
-    const { isOpening, myDepositValue, spend, bobAddressHex, withdrawalBalance, latestPayment} = this.state
+    const {
+      isOpening,
+      myDepositValue,
+      spend,
+      bobAddressHex,
+      withdrawalBalance,
+      latestPayment,
+    } = this.state
     const { channelId, account } = this.props
     let btns
     if (isOpening) {
-      btns = <>
-        <p><Deposit account={account} channelId={channelId} /></p>
-        <p><MakePayment
-          receivable={latestPayment.value}
-          myDepositValue={myDepositValue}
-          spend={spend}
+      btns = (
+        <>
+          <p>
+            <Deposit account={account} channelId={channelId} />
+          </p>
+          <p>
+            <MakePayment
+              receivable={latestPayment.value}
+              myDepositValue={myDepositValue}
+              spend={spend}
+              account={account}
+              channelId={channelId}
+              bobAddressHex={bobAddressHex}
+              onPayment={(payment) => this.onPayment(payment)}
+            />
+          </p>
+          <p>
+            <Claim account={account} payment={latestPayment} />
+          </p>
+        </>
+      )
+    } else {
+      btns = (
+        <Withdraw
+          withdrawalBalance={withdrawalBalance}
           account={account}
           channelId={channelId}
-          bobAddressHex={bobAddressHex}
-          onPayment={(payment) => this.onPayment(payment)}
-        /></p>
-        <p><Claim account={account} payment={latestPayment} /></p>
-      </>
-    } else {
-      btns = <Withdraw
-        withdrawalBalance={withdrawalBalance}
-        account={account}
-        channelId={channelId}
-        payment={latestPayment}
-      />
+          payment={latestPayment}
+        />
+      )
     }
     return <div>{btns}</div>
   }
